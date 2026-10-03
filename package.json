@@ -1,0 +1,28 @@
+{
+  "name": "resoluteraccons_maharashtra_round",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Karthik-bleep/ResoluteRaccons_maharashtra_round.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Karthik-bleep/ResoluteRaccons_maharashtra_round/issues"
+  },
+  "homepage": "https://github.com/Karthik-bleep/ResoluteRaccons_maharashtra_round#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.4"
+  }
+}
