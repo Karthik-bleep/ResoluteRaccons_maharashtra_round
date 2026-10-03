@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fair Drop | Secure Sign In</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Inter & JetBrains Mono Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            bg: '#080a0f',
+                            card: '#101522',
+                            border: '#1c2436',
+                            accent: '#161f33'
+                        },
+                        neon: {
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            rose: '#f43f5e',
+                            amber: '#f59e0b',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #080a0f;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glow-border-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+            border-color: rgba(6, 182, 212, 0.35);
+        }
+        .glow-border-emerald {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+        .glow-border-rose {
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.15);
+            border-color: rgba(244, 63, 94, 0.35);
+        }
+        .glass-card {
+            background: rgba(16, 21, 34, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(28, 36, 54, 0.8);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1c2436;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+            gap: 4px;
+        }
+        .seat-item {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+    </style>
+<style>
+#auth-screen{position:fixed;inset:0;z-index:100;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;background:linear-gradient(to right,#e2e2e2,#c9d6ff);color:#333}
+#auth-screen.gone{display:none}
+#auth-screen *{font-family:'Montserrat',sans-serif}
+#auth-screen .auth-box{background:#fff;border-radius:30px;box-shadow:0 5px 15px rgba(0,0,0,.35);position:relative;overflow:hidden;width:768px;max-width:100%;min-height:480px}
+#auth-screen .auth-box p{font-size:14px;line-height:20px;letter-spacing:.3px;margin:20px 0}
+#auth-screen .auth-box h1{font-size:2em;font-weight:700;color:inherit;margin:0 0 6px}
+#auth-screen .auth-box button{background:#2da0a8;color:#fff;font-size:12px;padding:10px 45px;border:1px solid transparent;border-radius:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-top:10px;cursor:pointer}
+#auth-screen .auth-box button:disabled{opacity:.6;cursor:wait}
+#auth-screen .auth-box button.ghost{background:transparent;border-color:#fff}
+#auth-screen .auth-box button.danger{background:#e11d48}
+#auth-screen form{background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0 40px;height:100%}
+#auth-screen input{background:#eee;color:#222;border:none;margin:8px 0;padding:10px 15px;font-size:13px;border-radius:8px;width:100%;outline:none}
+#auth-screen .form-container{position:absolute;top:0;height:100%;transition:all .6s ease-in-out}
+#auth-screen .sign-in{left:0;width:50%;z-index:2}
+#auth-screen .auth-box.active .sign-in{transform:translateX(100%)}
+#auth-screen .sign-up{left:0;width:50%;opacity:0;z-index:1}
+#auth-screen .auth-box.active .sign-up{transform:translateX(100%);opacity:1;z-index:5;animation:authmove .6s}
+@keyframes authmove{0%,49.99%{opacity:0;z-index:1}50%,100%{opacity:1;z-index:5}}
+#auth-screen .toggle-container{position:absolute;top:0;left:50%;width:50%;height:100%;overflow:hidden;transition:all .6s ease-in-out;border-radius:150px 0 0 100px;z-index:1000}
+#auth-screen .auth-box.active .toggle-container{transform:translateX(-100%);border-radius:0 150px 100px 0}
+#auth-screen .toggle{background:linear-gradient(to right,#5c6bc0,#2da0a8);color:#fff;position:relative;left:-100%;height:100%;width:200%;transform:translateX(0);transition:all .6s ease-in-out}
+#auth-screen .auth-box.active .toggle{transform:translateX(50%)}
+#auth-screen .toggle-panel{position:absolute;width:50%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0 30px;text-align:center;top:0;transition:all .6s ease-in-out}
+#auth-screen .toggle-left{transform:translateX(-200%)}
+#auth-screen .auth-box.active .toggle-left{transform:translateX(0)}
+#auth-screen .toggle-right{right:0}
+#auth-screen .auth-box.active .toggle-right{transform:translateX(200%)}
+#auth-screen .role-switch{display:flex;background:#eee;border-radius:8px;padding:3px;width:100%;margin:10px 0 4px}
+#auth-screen .auth-box .role-switch button{flex:1;margin:0;padding:8px 0;background:transparent;color:#666;border-radius:6px}
+#auth-screen .auth-box .role-switch button.on{background:#2da0a8;color:#fff}
+#auth-screen .auth-box .role-switch[data-role=admin] button.on{background:#e11d48}
+#auth-screen .msg{font-size:12px;min-height:18px;margin:4px 0 0;color:#e11d48;text-align:center}
+#auth-screen .msg.ok{color:#16a34a}
+#auth-screen .demo{background:#fff;border-radius:16px;padding:12px 16px;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,.2);width:768px;max-width:100%;display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+#auth-screen .demo b{font-weight:700}
+#auth-screen .demo code{background:#eee;padding:1px 6px;border-radius:4px;font-family:monospace}
+#auth-screen .demo button{border:1px solid #2da0a8;background:#fff;color:#2da0a8;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer}
+#auth-screen .demo button.adm{border-color:#e11d48;color:#e11d48}
+</style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-neon-cyan selection:text-black">
+<div id="auth-screen">
+  <div class="auth-box" id="auth-box">
+    <div class="form-container sign-up">
+      <form id="form-register" novalidate>
+        <h1>Create Account</h1>
+        <span>Register as a ticket purchaser</span>
+        <input id="su-name" type="text" placeholder="Name" autocomplete="name" />
+        <input id="su-email" type="email" placeholder="Email" autocomplete="email" />
+        <input id="su-pass" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
+        <div class="msg" id="su-msg"></div>
+        <button type="submit" id="su-btn">Sign Up</button>
+      </form>
+    </div>
+    <div class="form-container sign-in">
+      <form id="form-login" novalidate>
+        <h1 id="li-title">Sign In</h1>
+        <span>Choose your portal, then sign in</span>
+        <div class="role-switch" id="role-switch" data-role="user">
+          <button type="button" data-role="user" class="on">User</button>
+          <button type="button" data-role="admin">Admin</button>
+        </div>
+        <input id="li-email" type="email" placeholder="Email" autocomplete="username" />
+        <input id="li-pass" type="password" placeholder="Password" autocomplete="current-password" />
+        <div class="msg" id="li-msg"></div>
+        <button type="submit" id="li-btn">Sign In</button>
+      </form>
+    </div>
+    <div class="toggle-container">
+      <div class="toggle">
+        <div class="toggle-panel toggle-left">
+          <h1>Welcome Back!</h1>
+          <p>Enter your personal details to use all of site features</p>
+          <button class="ghost" id="go-login" type="button">Sign In</button>
+        </div>
+        <div class="toggle-panel toggle-right">
+          <h1>Hello, Friend!</h1>
+          <p>Register with your personal details to use all of site features</p>
+          <button class="ghost" id="go-register" type="button">Sign Up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="demo">
+    <div><b>Test logins</b> &nbsp; User: <code>user@fairdrop.test</code> / <code>User@123</code> &nbsp; Admin: <code>admin@fairdrop.test</code> / <code>Admin@123</code></div>
+    <div><button type="button" data-fill="user">Fill user</button> <button type="button" class="adm" data-fill="admin">Fill admin</button></div>
+  </div>
+</div>
+
+
+    <!-- Top Header Bar -->
+    <header class="border-b border-dark-border bg-dark-bg/90 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo & Platform Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-neon-cyan to-neon-emerald flex items-center justify-center text-black font-extrabold text-xl shadow-lg shadow-neon-cyan/20">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">FAIR DROP</span>
+                            <span id="role-badge" class="px-2 py-0.5 text-[10px] font-mono tracking-wide uppercase bg-slate-800 text-slate-400 border border-slate-700 rounded-full font-semibold">Portal Gateway</span>
+                        </div>
+                        <p class="text-xs text-slate-400 hidden sm:block">Anti-Bot High-Demand Seat Allocation</p>
+                    </div>
+                </div>
+
+                <!-- Active Role & Navigation Switcher -->
+                <div id="nav-controls" class="hidden flex items-center space-x-3">
+                    <div id="active-user-info" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-dark-card border border-dark-border text-xs font-mono">
+                        <span class="w-2 h-2 rounded-full bg-neon-emerald animate-pulse"></span>
+                        <span id="nav-user-label" class="text-slate-300">Role: Purchaser</span>
+                    </div>
+
+                    <button onclick="showPortal()" class="bg-dark-card hover:bg-slate-800 text-slate-300 border border-dark-border font-semibold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-right-from-bracket text-slate-400"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+
+        <!-- ==================== 1. ROLE SELECTION / PORTAL GATEWAY ==================== -->
+        <section id="view-portal" class="hidden py-8 space-y-8 max-w-4xl mx-auto">
+            <div class="text-center space-y-3">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-xs font-mono font-semibold">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Deterministic Anti-Bot Security Protocol</span>
+                </div>
+                <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">Select Authentication Portal</h1>
+                <p class="text-slate-400 text-sm max-w-xl mx-auto">
+                    Experience Fair Drop either as a general ticket purchaser contending in the high-demand queue, or as a security analyst simulating 50,000 adversarial bot attacks.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <!-- User Ticket Purchaser Portal Card -->
+                <div onclick="loginAs('user')" class="glass-card rounded-2xl p-6 hover:border-neon-cyan transition-all duration-300 cursor-pointer group flex flex-col justify-between space-y-6 glow-border-cyan">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-neon-cyan text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold text-white group-hover:text-neon-cyan transition-colors">Ticket Purchaser Portal</h2>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Join the live queue for 500 VIP seats. Complete Proof-of-Work anti-bot verification, claim seat reservations, and confirm purchases.
+                            </p>
+                        </div>
+                        <ul class="text-xs text-slate-300 space-y-2 font-mono">
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-cyan"></i>
+                                <span>Deterministic Session Persistence</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-cyan"></i>
+                                <span>Non-Intrusive PoW Math Verification</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-cyan"></i>
+                                <span>2-Minute Atomic Seat Reservation Hold</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full bg-gradient-to-r from-neon-cyan to-blue-600 group-hover:from-cyan-400 group-hover:to-blue-500 text-black font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg shadow-neon-cyan/20 flex items-center justify-center space-x-2">
+                        <span>Enter User Queue Portal</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Admin & Security Analyst Portal Card -->
+                <div onclick="loginAs('admin')" class="glass-card rounded-2xl p-6 hover:border-neon-rose transition-all duration-300 cursor-pointer group flex flex-col justify-between space-y-6 glow-border-rose">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-xl bg-neon-rose/10 border border-rose-500/30 flex items-center justify-center text-neon-rose text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold text-white group-hover:text-neon-rose transition-colors">Admin Security Console</h2>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Monitor system health, simulate flash crowds up to 50,000 requests, launch bot horde attacks, and review live security audit streams.
+                            </p>
+                        </div>
+                        <ul class="text-xs text-slate-300 space-y-2 font-mono">
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-rose"></i>
+                                <span>Adversarial Attack Simulation Engine</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-rose"></i>
+                                <span>Real-time RPS & Allocation Charts</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fa-solid fa-check text-neon-rose"></i>
+                                <span>Live Bot Fingerprint Audit Telemetry</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="w-full bg-gradient-to-r from-neon-rose to-purple-600 group-hover:from-rose-400 group-hover:to-purple-500 text-white font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg shadow-neon-rose/20 flex items-center justify-center space-x-2">
+                        <span>Access Admin Security Console</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== 2. USER EXPERIENCE VIEW (TICKET PURCHASER) ==================== -->
+        <section id="view-user" class="space-y-6 hidden">
+
+            <!-- Banner Notice / Countdown -->
+            <div class="bg-gradient-to-r from-dark-card via-dark-accent to-dark-card border border-dark-border rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-neon-cyan/10 rounded-full blur-2xl"></div>
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
+                    <div class="space-y-1 text-center md:text-left">
+                        <div class="inline-flex items-center space-x-2 text-xs font-mono text-neon-amber uppercase tracking-wider bg-neon-amber/10 px-2.5 py-1 rounded-md border border-neon-amber/20">
+                            <i class="fa-solid fa-clock"></i>
+                            <span id="banner-status-tag">Live Sale Drop In Progress</span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">World Championship Final 2026</h1>
+                        <p class="text-sm text-slate-400">Exclusive 500 VIP Seats Drop • Protected by Client-Side Proof-of-Work Verification</p>
+                    </div>
+
+                    <div class="flex items-center space-x-4 bg-dark-bg/80 border border-dark-border p-3.5 rounded-xl backdrop-blur">
+                        <div class="text-center px-2">
+                            <span id="timer-min" class="font-mono text-2xl font-bold text-white">00</span>
+                            <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Mins</span>
+                        </div>
+                        <span class="text-2xl font-bold text-slate-600">:</span>
+                        <div class="text-center px-2">
+                            <span id="timer-sec" class="font-mono text-2xl font-bold text-white">45</span>
+                            <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Secs</span>
+                        </div>
+                        <button id="btn-enter-queue" onclick="enterUserQueue()" class="ml-2 bg-gradient-to-r from-neon-cyan to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-neon-cyan/20 flex items-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>Join Queue</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Queue Status & Connection Info Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Queue Status Card -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-6 flex flex-col justify-between glow-border-cyan">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-xs uppercase font-mono text-slate-400 tracking-wider">Your Queue Position</span>
+                            <h2 id="user-queue-pos" class="text-4xl font-extrabold text-white mt-1">--</h2>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-neon-cyan/10 flex items-center justify-center text-neon-cyan border border-neon-cyan/30">
+                            <i class="fa-solid fa-users-line text-lg"></i>
+                        </div>
+                    </div>
+
+                    <div class="my-6 space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Queue Progress</span>
+                                <span id="queue-progress-txt" class="font-mono text-neon-cyan">0%</span>
+                            </div>
+                            <div class="w-full bg-dark-bg h-2 rounded-full overflow-hidden border border-dark-border">
+                                <div id="queue-progress-bar" class="bg-gradient-to-r from-neon-cyan to-neon-emerald h-full w-0 transition-all duration-300"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-dark-border/50">
+                            <span>Estimated Wait Time:</span>
+                            <span id="user-wait-time" class="font-mono text-white font-semibold">-- min</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button id="btn-claim-seat" onclick="openPowModal()" disabled class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed">
+                            <i class="fa-solid fa-lock"></i>
+                            <span id="btn-claim-text">Waiting for Allocation Turn...</span>
+                        </button>
+                        <p class="text-[11px] text-center text-slate-500">Requires PoW Verification challenge upon turn.</p>
+                    </div>
+                </div>
+
+                <!-- Session & Connection Integrity Card -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-plug text-neon-emerald"></i>
+                                <span>Session Transport State</span>
+                            </h3>
+                            <div class="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span id="connection-status-text">SSE Connected</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 font-mono text-xs">
+                            <div class="bg-dark-bg p-3 rounded-xl border border-dark-border space-y-2">
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Session Token:</span>
+                                    <span id="session-token-display" class="text-neon-cyan font-bold">FD-INIT-000000</span>
+                                </div>
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Client Fingerprint:</span>
+                                    <span id="client-fp-display" class="text-slate-300">Calculating...</span>
+                                </div>
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Heartbeat Latency:</span>
+                                    <span id="latency-display" class="text-emerald-400">18 ms</span>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-neon-cyan/5 border border-neon-cyan/20 rounded-xl space-y-1">
+                                <span class="text-[11px] font-sans font-semibold text-neon-cyan flex items-center space-x-1">
+                                    <i class="fa-solid fa-shield-cat"></i>
+                                    <span>Session Resilience Active</span>
+                                </span>
+                                <p class="text-[11px] font-sans text-slate-400 leading-relaxed">
+                                    Your session token is cryptographically bound to your browser fingerprint. Network drops preserve queue priority.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-dark-border flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Rate Limiter Status:</span>
+                        <span class="text-emerald-400 font-mono font-semibold"><i class="fa-solid fa-circle-check"></i> Clean (0 Violations)</span>
+                    </div>
+                </div>
+
+                <!-- Seat Reservation Hold Timer Card -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-stopwatch text-neon-amber"></i>
+                                <span>Seat Allocation Timer</span>
+                            </h3>
+                            <span id="hold-badge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-slate-800 text-slate-400">Inactive</span>
+                        </div>
+                        <p class="text-xs text-slate-400">When allocated, you have a 2-minute temporary hold to confirm your ticket.</p>
+
+                        <div class="my-6 text-center">
+                            <span id="hold-clock" class="font-mono text-5xl font-extrabold text-slate-600">02:00</span>
+                            <span class="block text-xs text-slate-500 mt-2">Remaining Hold Duration</span>
+                        </div>
+                    </div>
+
+                    <div id="checkout-summary" class="bg-dark-bg p-3 rounded-xl border border-dark-border space-y-2 hidden">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Selected Seat:</span>
+                            <span id="selected-seat-id" class="font-mono text-neon-emerald font-bold">None</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Price Tier:</span>
+                            <span class="text-white font-semibold">$150.00 (Standard VIP)</span>
+                        </div>
+                        <button onclick="confirmPurchase()" class="w-full bg-neon-emerald hover:bg-emerald-400 text-black font-bold py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-neon-emerald/20">
+                            Confirm Purchase Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seat Grid Section -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-border-all text-neon-cyan"></i>
+                            <span>Live Venue Seat Grid (500 Seats)</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Real-time state tracking across all competing clients & background anti-bot nodes.</p>
+                    </div>
+
+                    <!-- Seat Legend -->
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-mono">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-slate-700"></span>
+                            <span class="text-slate-300">Available</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-neon-amber animate-pulse"></span>
+                            <span class="text-slate-300">Held (2m)</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-neon-emerald"></span>
+                            <span class="text-slate-300">Sold (Human)</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-neon-rose"></span>
+                            <span class="text-slate-300">Blocked Bot Target</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seat Grid Container -->
+                <div class="bg-dark-bg p-4 rounded-xl border border-dark-border overflow-x-auto">
+                    <div id="seat-grid-user" class="seat-grid min-w-[600px]">
+                        <!-- 500 Seats populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ==================== 3. ADMIN & SECURITY ANALYST DASHBOARD ==================== -->
+        <section id="view-admin" class="space-y-6 hidden">
+
+            <!-- Control & Attack Simulator Panel -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-6 glow-border-rose">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-dark-border pb-4 gap-2">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-xl font-extrabold text-white">Adversarial Traffic & Stress Controller</h2>
+                            <span class="px-2.5 py-0.5 text-xs font-mono bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-md font-bold">Security Sandbox</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Simulate 50,000 flash crowd requests, automated bot scripts, and rate-limit violations.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="resetSimulation()" class="bg-dark-bg hover:bg-slate-800 text-slate-300 border border-dark-border font-bold px-3 py-2 rounded-xl text-xs transition-all flex items-center space-x-1.5">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>Reset Simulation</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Attack Control Actions Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Normal Traffic Trigger -->
+                    <div class="bg-dark-bg p-4 rounded-xl border border-dark-border space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-neon-emerald flex items-center space-x-1.5">
+                                <i class="fa-solid fa-user-group"></i>
+                                <span>Human Traffic Surge</span>
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500">Normal</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Injects 500 legitimate human queue requests with realistic typing and mouse telemetry vectors.</p>
+                        <button onclick="triggerHumanSurge()" class="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 font-bold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Simulate 500 Humans</span>
+                        </button>
+                    </div>
+
+                    <!-- Bot Flood Attack Trigger -->
+                    <div class="bg-dark-bg p-4 rounded-xl border border-dark-border space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-neon-rose flex items-center space-x-1.5">
+                                <i class="fa-solid fa-robot"></i>
+                                <span>Bot Horde Attack</span>
+                            </span>
+                            <span class="text-[10px] font-mono text-rose-400 font-semibold">Adversarial</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Launches rapid headless scripts, header spoofing, zero-delay clicks, and auto-retry loops.</p>
+                        <button onclick="triggerBotAttack()" class="w-full bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/40 font-bold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-skull"></i>
+                            <span>Launch 5,000 Bot Horde</span>
+                        </button>
+                    </div>
+
+                    <!-- Scalable Flash Crowd Slider -->
+                    <div class="bg-dark-bg p-4 rounded-xl border border-dark-border space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-neon-cyan flex items-center space-x-1.5">
+                                <i class="fa-solid fa-gauge-high"></i>
+                                <span>Flash Crowd Load Scale</span>
+                            </span>
+                            <span id="slider-req-val" class="text-xs font-mono text-neon-cyan font-bold">10,000 Reqs</span>
+                        </div>
+                        <input id="traffic-slider" type="range" min="1000" max="50000" step="1000" value="10000" oninput="updateSliderVal(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-neon-cyan">
+                        <button onclick="triggerScaledLoad()" class="w-full bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 font-bold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Trigger Scaled Flash Crowd</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fairness Analytics & Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Seat Allocation Breakdown -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-pie text-neon-cyan"></i>
+                            <span>Seat Allocation Fairness Integrity</span>
+                        </h3>
+                        <span class="text-[11px] font-mono text-slate-400">Total: 500 Inventory</span>
+                    </div>
+                    <div class="h-64 flex items-center justify-center relative">
+                        <canvas id="chart-allocation"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Traffic Stream & Latency Graph -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-line text-neon-emerald"></i>
+                            <span>Live Traffic vs Mitigation Velocity</span>
+                        </h3>
+                        <div class="flex items-center space-x-3 text-[11px] font-mono">
+                            <span class="flex items-center space-x-1 text-neon-cyan">
+                                <span class="w-2 h-2 rounded-full bg-neon-cyan"></span> Reqs/s
+                            </span>
+                            <span class="flex items-center space-x-1 text-neon-rose">
+                                <span class="w-2 h-2 rounded-full bg-neon-rose"></span> Blocked/s
+                            </span>
+                        </div>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="chart-traffic"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seat Inventory Monitor Grid for Admin -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-eye text-neon-amber"></i>
+                            <span>Admin Seat Allocation Monitor</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Real-time state tracking of all 500 seats across active human purchasers and blocked bot nodes.</p>
+                    </div>
+                </div>
+                <div class="bg-dark-bg p-4 rounded-xl border border-dark-border overflow-x-auto">
+                    <div id="seat-grid-admin" class="seat-grid min-w-[600px]">
+                        <!-- Syncs with seat state -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bot Mitigation Audit Log Stream -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-dark-border pb-3">
+                    <div class="flex items-center space-x-2">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-terminal text-neon-amber"></i>
+                            <span>Security Telemetry & Bot Audit Stream</span>
+                        </h3>
+                        <span id="audit-log-count" class="px-2 py-0.5 text-[10px] font-mono bg-slate-800 text-slate-300 rounded">0 Events</span>
+                    </div>
+                    <button onclick="clearAuditLog()" class="text-xs text-slate-500 hover:text-slate-300">Clear Logs</button>
+                </div>
+
+                <div id="audit-log-stream" class="bg-dark-bg p-4 rounded-xl border border-dark-border font-mono text-xs space-y-2 h-48 overflow-y-auto">
+                    <div class="text-slate-500 italic">[00:00:00] Security Kernel active. Waiting for traffic events...</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Proof of Work Verification Modal -->
+    <div id="pow-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-dark-card border border-neon-cyan/40 rounded-2xl max-w-md w-full p-6 space-y-5 glow-border-cyan relative">
+            <button onclick="closePowModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="space-y-1">
+                <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-neon-cyan/10 text-neon-cyan text-[11px] font-mono font-semibold border border-neon-cyan/30">
+                    <i class="fa-solid fa-shield-virus"></i>
+                    <span>Anti-Bot Verification</span>
+                </div>
+                <h3 class="text-xl font-bold text-white">Client Proof-of-Work Challenge</h3>
+                <p class="text-xs text-slate-400">Solve the micro-math challenge to generate your single-use cryptographic allocation claim hash.</p>
+            </div>
+
+            <!-- Math Puzzle Challenge Box -->
+            <div class="bg-dark-bg p-4 rounded-xl border border-dark-border space-y-3 text-center">
+                <span class="text-xs uppercase font-mono text-slate-400 tracking-wider">Solve Hash Challenge</span>
+                <div class="flex items-center justify-center space-x-3 text-2xl font-mono font-bold text-white my-2">
+                    <span id="pow-val-1">14</span>
+                    <span id="pow-op">+</span>
+                    <span id="pow-val-2">27</span>
+                    <span>=</span>
+                    <input id="pow-input" type="number" placeholder="?" class="w-20 bg-dark-card border border-neon-cyan text-center text-neon-cyan font-bold py-1 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-neon-cyan">
+                </div>
+                <p id="pow-hint" class="text-[11px] text-slate-500">Computes sha256 nonce bound to session ID</p>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="space-y-2">
+                <button onclick="verifyAndClaimSeat()" class="w-full bg-gradient-to-r from-neon-cyan to-neon-emerald hover:from-cyan-400 hover:to-emerald-400 text-black font-extrabold py-3 rounded-xl text-sm transition-all shadow-lg shadow-neon-cyan/20 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Submit & Claim Seat</span>
+                </button>
+                <p id="pow-error" class="text-xs text-rose-400 text-center font-mono hidden">Incorrect answer! Please retry puzzle.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+    <footer class="border-t border-dark-border bg-dark-bg py-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>Fair Drop Engine • Role-Based Allocation Platform</span>
+            <span class="font-mono text-slate-600">Deterministic Queue Hash Protection Layer v2.5</span>
+        </div>
+    </footer>
+
+    <script>
+        /* Global Application State */
+        const TOTAL_SEATS = 500;
+        let currentRole = null; // 'user' or 'admin'
+        let seats = []; // Stores state: 'available', 'held', 'sold', 'bot'
+        let userInQueue = false;
+        let userPosition = 0;
+        let userHoldTimer = null;
+        let userHoldSeconds = 120; // 2 minutes hold
+        let sessionToken = '';
+        let clientFingerprint = '';
+
+        // Global Analytics Telemetry State
+        let metrics = {
+            totalRequests: 0,
+            legitimateClaims: 0,
+            blockedBots: 0,
+            unsoldSeats: TOTAL_SEATS,
+            reqPerSec: 0,
+            blockedPerSec: 0,
+            latencyMs: 18
+        };
+
+        // Charts handles
+        let chartAllocation = null;
+        let chartTraffic = null;
+        let trafficDataHistory = Array(15).fill(0);
+        let blockedDataHistory = Array(15).fill(0);
+
+        window.onload = function() {
+            generateSessionCredentials();
+            initSeatGrid();
+            initCharts();
+            startSystemHeartbeat();
+            generatePowChallenge();
+        };
+
+        function showPortal() {
+            currentRole = null;
+            document.getElementById('view-portal').classList.remove('hidden');
+            document.getElementById('view-user').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+            document.getElementById('nav-controls').classList.add('hidden');
+            document.getElementById('role-badge').innerText = 'Portal Gateway';
+            document.getElementById('role-badge').className = 'px-2 py-0.5 text-[10px] font-mono tracking-wide uppercase bg-slate-800 text-slate-400 border border-slate-700 rounded-full font-semibold';
+        }
+
+        function loginAs(role) {
+            currentRole = role;
+            document.getElementById('view-portal').classList.add('hidden');
+            document.getElementById('nav-controls').classList.remove('hidden');
+
+            if (role === 'user') {
+                document.getElementById('view-user').classList.remove('hidden');
+                document.getElementById('view-admin').classList.add('hidden');
+                document.getElementById('role-badge').innerText = 'User Purchaser';
+                document.getElementById('role-badge').className = 'px-2 py-0.5 text-[10px] font-mono tracking-wide uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full font-semibold';
+                document.getElementById('nav-user-label').innerText = 'Role: Purchaser';
+                showToast('Authenticated into Purchaser Portal', 'cyan');
+            } else if (role === 'admin') {
+                document.getElementById('view-admin').classList.remove('hidden');
+                document.getElementById('view-user').classList.add('hidden');
+                document.getElementById('role-badge').innerText = 'Admin Security';
+                document.getElementById('role-badge').className = 'px-2 py-0.5 text-[10px] font-mono tracking-wide uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-full font-semibold';
+                document.getElementById('nav-user-label').innerText = 'Role: Security Analyst';
+                showToast('Authenticated into Admin Security Console', 'rose');
+                
+                // Force chart update on view transition
+                setTimeout(() => {
+                    if(chartAllocation) chartAllocation.update();
+                    if(chartTraffic) chartTraffic.update();
+                }, 100);
+            }
+        }
+
+        function generateSessionCredentials() {
+            const randHex = (len) => Array.from({length: len}, () => Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
+            sessionToken = `FD-${randHex(4)}-${randHex(6)}`;
+            clientFingerprint = `fp_${randHex(8).toLowerCase()}`;
+
+            document.getElementById('session-token-display').innerText = sessionToken;
+            document.getElementById('client-fp-display').innerText = clientFingerprint;
+        }
+
+        function initSeatGrid() {
+            seats = [];
+            for (let i = 1; i <= TOTAL_SEATS; i++) {
+                seats.push({
+                    id: i,
+                    status: 'available', // available, held, sold, bot
+                    heldBy: null
+                });
+            }
+            renderSeatGrids();
+        }
+
+        function renderSeatGrids() {
+            const containerUser = document.getElementById('seat-grid-user');
+            const containerAdmin = document.getElementById('seat-grid-admin');
+            
+            containerUser.innerHTML = '';
+            containerAdmin.innerHTML = '';
+
+            for (let i = 1; i <= TOTAL_SEATS; i++) {
+                // User Grid Item
+                const uSeat = document.createElement('div');
+                uSeat.id = `u-seat-${i}`;
+                uSeat.className = 'seat-item bg-slate-700 cursor-pointer hover:opacity-80';
+                uSeat.onclick = () => handleSeatClick(i);
+                containerUser.appendChild(uSeat);
+
+                // Admin Grid Item
+                const aSeat = document.createElement('div');
+                aSeat.id = `a-seat-${i}`;
+                aSeat.className = 'seat-item bg-slate-700 cursor-pointer hover:opacity-80';
+                aSeat.onclick = () => handleSeatClick(i);
+                containerAdmin.appendChild(aSeat);
+            }
+            updateSeatUI();
+        }
+
+        function updateSeatUI() {
+            seats.forEach(seat => {
+                const uEl = document.getElementById(`u-seat-${seat.id}`);
+                const aEl = document.getElementById(`a-seat-${seat.id}`);
+
+                [uEl, aEl].forEach(el => {
+                    if (!el) return;
+                    el.className = 'seat-item transition-all ';
+                    if (seat.status === 'available') {
+                        el.classList.add('bg-slate-700', 'hover:bg-slate-600');
+                        el.title = `Seat #${seat.id} - Available`;
+                    } else if (seat.status === 'held') {
+                        el.classList.add('bg-neon-amber', 'animate-pulse');
+                        el.title = `Seat #${seat.id} - Temporary Hold`;
+                    } else if (seat.status === 'sold') {
+                        el.classList.add('bg-neon-emerald');
+                        el.title = `Seat #${seat.id} - Confirmed Purchase`;
+                    } else if (seat.status === 'bot') {
+                        el.classList.add('bg-neon-rose');
+                        el.title = `Seat #${seat.id} - Blocked Bot Target`;
+                    }
+                });
+            });
+
+            // Update statistics
+            const sold = seats.filter(s => s.status === 'sold').length;
+            const held = seats.filter(s => s.status === 'held').length;
+            metrics.unsoldSeats = TOTAL_SEATS - (sold + held);
+            metrics.legitimateClaims = sold;
+
+            updateCharts();
+        }
+
+        function enterUserQueue() {
+            if (userInQueue) {
+                showToast('Already in Queue!', 'amber');
+                return;
+            }
+
+            userInQueue = true;
+            userPosition = Math.floor(Math.random() * 30) + 10; // Simulate position 10-40
+
+            document.getElementById('btn-enter-queue').disabled = true;
+            document.getElementById('btn-enter-queue').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('banner-status-tag').innerText = 'Queue Slot Reserved';
+
+            showToast('Entered Queue with Session Priority!', 'cyan');
+            updateQueueState();
+        }
+
+        function updateQueueState() {
+            if (!userInQueue) return;
+
+            document.getElementById('user-queue-pos').innerText = `#${userPosition}`;
+            const maxWait = Math.ceil(userPosition * 0.2);
+            document.getElementById('user-wait-time').innerText = `~${maxWait} min`;
+
+            const progressPct = Math.min(100, Math.round(((40 - userPosition) / 40) * 100));
+            document.getElementById('queue-progress-bar').style.width = `${Math.max(5, progressPct)}%`;
+            document.getElementById('queue-progress-txt').innerText = `${Math.max(5, progressPct)}%`;
+
+            if (userPosition === 0) {
+                // User's turn reached
+                document.getElementById('user-queue-pos').innerText = 'READY';
+                document.getElementById('user-queue-pos').className = 'text-4xl font-extrabold text-neon-emerald mt-1';
+                
+                const claimBtn = document.getElementById('btn-claim-seat');
+                claimBtn.disabled = false;
+                claimBtn.className = 'w-full bg-gradient-to-r from-neon-cyan to-neon-emerald hover:from-cyan-400 hover:to-emerald-400 text-black font-extrabold py-3 rounded-xl text-sm transition-all shadow-lg shadow-neon-cyan/20 cursor-pointer animate-bounce';
+                document.getElementById('btn-claim-text').innerText = 'Verify & Claim Allocated Seat';
+                showToast('Your turn has arrived! Click to solve PoW challenge.', 'emerald');
+            }
+        }
+
+        let currentPowAnswer = 0;
+
+        function generatePowChallenge() {
+            const v1 = Math.floor(Math.random() * 30) + 10;
+            const v2 = Math.floor(Math.random() * 30) + 10;
+            currentPowAnswer = v1 + v2;
+
+            document.getElementById('pow-val-1').innerText = v1;
+            document.getElementById('pow-val-2').innerText = v2;
+            document.getElementById('pow-input').value = '';
+            document.getElementById('pow-error').classList.add('hidden');
+        }
+
+        function openPowModal() {
+            generatePowChallenge();
+            document.getElementById('pow-modal').classList.remove('hidden');
+        }
+
+        function closePowModal() {
+            document.getElementById('pow-modal').classList.add('hidden');
+        }
+
+        function verifyAndClaimSeat() {
+            const inputVal = parseInt(document.getElementById('pow-input').value);
+            if (inputVal !== currentPowAnswer) {
+                document.getElementById('pow-error').classList.remove('hidden');
+                return;
+            }
+
+            closePowModal();
+            allocateUserSeat();
+        }
+
+        function allocateUserSeat() {
+            const availableSeat = seats.find(s => s.status === 'available');
+            if (!availableSeat) {
+                showToast('All seats have been claimed!', 'rose');
+                return;
+            }
+
+            availableSeat.status = 'held';
+            availableSeat.heldBy = sessionToken;
+            updateSeatUI();
+
+            // Start Hold Timer
+            document.getElementById('checkout-summary').classList.remove('hidden');
+            document.getElementById('selected-seat-id').innerText = `Seat #${availableSeat.id}`;
+            document.getElementById('hold-badge').className = 'px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-neon-amber/20 text-neon-amber border border-neon-amber/30';
+            document.getElementById('hold-badge').innerText = '2m Hold Active';
+
+            startHoldCountdown(availableSeat.id);
+            showToast(`Reserved Seat #${availableSeat.id}! Complete checkout before timer expires.`, 'emerald');
+
+            logAudit('HUMAN_VERIFIED', sessionToken, `PoW Solved in 1.2s. Temporary hold applied to Seat #${availableSeat.id}`);
+        }
+
+        function startHoldCountdown(seatId) {
+            if (userHoldTimer) clearInterval(userHoldTimer);
+            userHoldSeconds = 120;
+
+            userHoldTimer = setInterval(() => {
+                userHoldSeconds--;
+                const mins = Math.floor(userHoldSeconds / 60).toString().padStart(2, '0');
+                const secs = (userHoldSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('hold-clock').innerText = `${mins}:${secs}`;
+
+                if (userHoldSeconds <= 0) {
+                    clearInterval(userHoldTimer);
+                    const targetSeat = seats.find(s => s.id === seatId);
+                    if (targetSeat && targetSeat.status === 'held') {
+                        targetSeat.status = 'available';
+                        updateSeatUI();
+                        showToast('Reservation expired. Seat released to queue.', 'rose');
+                        document.getElementById('checkout-summary').classList.add('hidden');
+                    }
+                }
+            }, 1000);
+        }
+
+        function confirmPurchase() {
+            if (userHoldTimer) clearInterval(userHoldTimer);
+            const heldSeat = seats.find(s => s.heldBy === sessionToken && s.status === 'held');
+
+            if (heldSeat) {
+                heldSeat.status = 'sold';
+                updateSeatUI();
+                showToast(`Payment Confirmed! Seat #${heldSeat.id} successfully purchased.`, 'emerald');
+                document.getElementById('checkout-summary').classList.add('hidden');
+                document.getElementById('hold-clock').innerText = 'SUCCESS';
+                document.getElementById('hold-clock').className = 'font-mono text-3xl font-extrabold text-neon-emerald';
+                document.getElementById('btn-claim-seat').disabled = true;
+                document.getElementById('btn-claim-text').innerText = 'Ticket Claimed Successfully';
+                document.getElementById('btn-claim-seat').className = 'w-full bg-slate-800 text-neon-emerald font-bold py-3 rounded-xl text-sm border border-neon-emerald/30';
+            }
+        }
+
+        function handleSeatClick(seatId) {
+            const seat = seats.find(s => s.id === seatId);
+            if (!seat) return;
+
+            showToast(`Seat #${seat.id} Status: ${seat.status.toUpperCase()}`, seat.status === 'sold' ? 'emerald' : seat.status === 'bot' ? 'rose' : 'cyan');
+        }
+
+        function triggerHumanSurge() {
+            let count = 0;
+            const interval = setInterval(() => {
+                count += 10;
+                metrics.totalRequests += 10;
+                metrics.reqPerSec += 25;
+
+                if (userInQueue && userPosition > 0 && Math.random() > 0.4) {
+                    userPosition--;
+                    updateQueueState();
+                }
+
+                const freeSeat = seats.find(s => s.status === 'available');
+                if (freeSeat && Math.random() > 0.3) {
+                    freeSeat.status = 'sold';
+                    updateSeatUI();
+                }
+
+                if (count >= 500) clearInterval(interval);
+            }, 100);
+
+            logAudit('SURGE_SIMULATION', 'CLUSTER-US-EAST', 'Simulated 500 legitimate human requests across regional proxies');
+            showToast('Simulated 500 Legitimate Human Requests', 'emerald');
+        }
+
+        function triggerBotAttack() {
+            let count = 0;
+            const interval = setInterval(() => {
+                count += 200;
+                metrics.totalRequests += 200;
+                metrics.blockedBots += 185;
+                metrics.reqPerSec += 450;
+                metrics.blockedPerSec += 420;
+
+                const freeSeat = seats.find(s => s.status === 'available');
+                if (freeSeat) {
+                    freeSeat.status = 'bot';
+                    updateSeatUI();
+                }
+
+                if (count % 1000 === 0) {
+                    const attackTypes = [
+                        'Velocity Spacing Violation (Requests < 3ms spacing)',
+                        'Failed Client Fingerprint & Synthetic UserAgent Header',
+                        'PoW Nonce Replay Attack Detected',
+                        'Rate Limit Exceeded (50 reqs/sec single IP)'
+                    ];
+                    const randomReason = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+                    logAudit('BOT_BLOCKED', `192.168.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`, randomReason);
+                }
+
+                if (count >= 5000) clearInterval(interval);
+            }, 80);
+
+            showToast('5,000 Bot Attack Flooded & Neutralized by Fair Drop!', 'rose');
+        }
+
+        function updateSliderVal(val) {
+            document.getElementById('slider-req-val').innerText = `${parseInt(val).toLocaleString()} Reqs`;
+        }
+
+        function triggerScaledLoad() {
+            const val = parseInt(document.getElementById('traffic-slider').value);
+            metrics.totalRequests += val;
+            const botAmount = Math.floor(val * 0.85);
+            metrics.blockedBots += botAmount;
+
+            seats.forEach(seat => {
+                if (seat.status === 'available') {
+                    seat.status = Math.random() > 0.3 ? 'bot' : 'sold';
+                }
+            });
+
+            updateSeatUI();
+            logAudit('SCALE_TEST', 'TRAFFIC_GEN', `Executed scaled load test with ${val.toLocaleString()} concurrent requests. ${botAmount.toLocaleString()} malicious requests isolated.`);
+            showToast(`Scaled Load Test (${val.toLocaleString()} reqs) Executed!`, 'cyan');
+        }
+
+        function resetSimulation() {
+            metrics.totalRequests = 0;
+            metrics.blockedBots = 0;
+            metrics.legitimateClaims = 0;
+            userInQueue = false;
+            userPosition = 0;
+
+            document.getElementById('btn-enter-queue').disabled = false;
+            document.getElementById('btn-enter-queue').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('user-queue-pos').innerText = '--';
+            document.getElementById('user-wait-time').innerText = '-- min';
+            document.getElementById('queue-progress-bar').style.width = '0%';
+            document.getElementById('queue-progress-txt').innerText = '0%';
+            document.getElementById('checkout-summary').classList.add('hidden');
+            document.getElementById('hold-clock').innerText = '02:00';
+            document.getElementById('hold-clock').className = 'font-mono text-5xl font-extrabold text-slate-600';
+
+            initSeatGrid();
+            clearAuditLog();
+            showToast('System State Fully Reset', 'cyan');
+        }
+
+        function startSystemHeartbeat() {
+            setInterval(() => {
+                metrics.latencyMs = Math.floor(Math.random() * 8) + 14;
+                document.getElementById('latency-display').innerText = `${metrics.latencyMs} ms`;
+
+                trafficDataHistory.shift();
+                trafficDataHistory.push(metrics.reqPerSec);
+                blockedDataHistory.shift();
+                blockedDataHistory.push(metrics.blockedPerSec);
+
+                if (chartTraffic) {
+                    chartTraffic.data.datasets[0].data = trafficDataHistory;
+                    chartTraffic.data.datasets[1].data = blockedDataHistory;
+                    chartTraffic.update('none');
+                }
+
+                metrics.reqPerSec = Math.max(0, Math.floor(metrics.reqPerSec * 0.4));
+                metrics.blockedPerSec = Math.max(0, Math.floor(metrics.blockedPerSec * 0.4));
+
+            }, 1000);
+        }
+
+        function initCharts() {
+            const ctx1 = document.getElementById('chart-allocation').getContext('2d');
+            chartAllocation = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Legitimate Humans', 'Blocked Bot Targets', 'Unsold / Available'],
+                    datasets: [{
+                        data: [0, 0, TOTAL_SEATS],
+                        backgroundColor: ['#10b981', '#f43f5e', '#334155'],
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            const ctx2 = document.getElementById('chart-traffic').getContext('2d');
+            chartTraffic = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: Array(15).fill(''),
+                    datasets: [
+                        {
+                            label: 'Requests / sec',
+                            data: trafficDataHistory,
+                            borderColor: '#06b6d4',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Blocked / sec',
+                            data: blockedDataHistory,
+                            borderColor: '#f43f5e',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            grid: { color: '#1c2436' },
+                            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (!chartAllocation) return;
+
+            const sold = seats.filter(s => s.status === 'sold').length;
+            const bots = seats.filter(s => s.status === 'bot').length;
+            const available = TOTAL_SEATS - (sold + bots);
+
+            chartAllocation.data.datasets[0].data = [sold, bots, available];
+            chartAllocation.update();
+        }
+
+        let logCount = 0;
+        function logAudit(event, source, details) {
+            const stream = document.getElementById('audit-log-stream');
+            if (logCount === 0) stream.innerHTML = '';
+
+            logCount++;
+            document.getElementById('audit-log-count').innerText = `${logCount} Events`;
+
+            const timestamp = new Date().toISOString().substring(11, 19);
+            const item = document.createElement('div');
+            item.className = 'flex items-start space-x-2 border-b border-dark-border/40 pb-1.5';
+
+            let tagColor = 'text-neon-cyan';
+            if (event === 'BOT_BLOCKED') tagColor = 'text-neon-rose font-bold';
+            if (event === 'HUMAN_VERIFIED') tagColor = 'text-neon-emerald font-bold';
+
+            item.innerHTML = `
+                <span class="text-slate-500">[${timestamp}]</span>
+                <span class="${tagColor}">[${event}]</span>
+                <span class="text-slate-400">src=${source}:</span>
+                <span class="text-slate-200">${details}</span>
+            `;
+
+            stream.prepend(item);
+        }
+
+        function clearAuditLog() {
+            logCount = 0;
+            document.getElementById('audit-log-count').innerText = '0 Events';
+            document.getElementById('audit-log-stream').innerHTML = '<div class="text-slate-500 italic">[00:00:00] Security Kernel active. Logs cleared.</div>';
+        }
+
+        function showToast(msg, type = 'cyan') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let borderCol = 'border-neon-cyan';
+            if (type === 'emerald') borderCol = 'border-neon-emerald';
+            if (type === 'rose') borderCol = 'border-neon-rose';
+            if (type === 'amber') borderCol = 'border-neon-amber';
+
+            toast.className = `bg-dark-card border-l-4 ${borderCol} border border-dark-border text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 transition-all transform duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-bell text-slate-400"></i>
+                <span>${msg}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const mem = {};
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch(e){ return mem[k] ?? null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch(e){ mem[k] = v; } },
+    del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
+  };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const sha = async s => {
+    try {
+      const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+      return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
+    } catch(e){ return 'fb' + btoa(unescape(encodeURIComponent(s))); }
+  };
+  const hashPw = (email, pw) => sha(email.toLowerCase() + '::fairdrop::' + pw);
+
+  /* ---- Mock backend (browser-side): users table + sessions, async like a real API ---- */
+  const API = {
+    async users(){
+      let u = JSON.parse(store.get('fd_users') || 'null');
+      if (!u) {
+        u = [
+          { name:'Demo User', email:'user@fairdrop.test', role:'user', hash: await hashPw('user@fairdrop.test','User@123') },
+          { name:'Security Admin', email:'admin@fairdrop.test', role:'admin', hash: await hashPw('admin@fairdrop.test','Admin@123') }
+        ];
+        store.set('fd_users', JSON.stringify(u));
+      }
+      return u;
+    },
+    async register({name, email, password}){
+      await wait(350);
+      email = email.trim().toLowerCase(); name = name.trim();
+      if (name.length < 2) throw new Error('Please enter your name.');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email address.');
+      if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+      const users = await this.users();
+      if (users.some(u => u.email === email)) throw new Error('An account with this email already exists.');
+      users.push({ name, email, role:'user', hash: await hashPw(email, password) });
+      store.set('fd_users', JSON.stringify(users));
+      return { email };
+    },
+    async login({email, password, role}){
+      await wait(350);
+      email = email.trim().toLowerCase();
+      const user = (await this.users()).find(u => u.email === email);
+      if (!user || user.hash !== await hashPw(email, password)) throw new Error('Invalid email or password.');
+      if (user.role !== role) throw new Error(role === 'admin' ? 'This account does not have admin access.' : 'Admin accounts must sign in from the Admin tab.');
+      const a = new Uint8Array(16); crypto.getRandomValues(a);
+      const s = { token: [...a].map(x => x.toString(16).padStart(2,'0')).join(''), name:user.name, email:user.email, role:user.role, exp: Date.now() + 8*3600*1000 };
+      store.set('fd_session', JSON.stringify(s));
+      return s;
+    },
+    session(){
+      try { const s = JSON.parse(store.get('fd_session') || 'null'); return s && s.exp > Date.now() ? s : null; } catch(e){ return null; }
+    },
+    logout(){ store.del('fd_session'); }
+  };
+
+  /* ---- UI wiring ---- */
+  const box = $('auth-box'), screen = $('auth-screen');
+  $('go-register').onclick = () => box.classList.add('active');
+  $('go-login').onclick = () => box.classList.remove('active');
+
+  const rs = $('role-switch');
+  function setRole(role){
+    rs.dataset.role = role;
+    rs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.role === role));
+    $('li-title').textContent = role === 'admin' ? 'Admin Sign In' : 'Sign In';
+    $('li-btn').classList.toggle('danger', role === 'admin');
+    $('li-msg').textContent = '';
+  }
+  rs.querySelectorAll('button').forEach(b => b.onclick = () => setRole(b.dataset.role));
+
+  document.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => {
+    const admin = b.dataset.fill === 'admin';
+    box.classList.remove('active'); setRole(admin ? 'admin' : 'user');
+    $('li-email').value = admin ? 'admin@fairdrop.test' : 'user@fairdrop.test';
+    $('li-pass').value = admin ? 'Admin@123' : 'User@123';
+  });
+
+  const say = (id, text, ok) => { const m = $(id); m.textContent = text; m.classList.toggle('ok', !!ok); };
+
+  $('form-register').onsubmit = async e => {
+    e.preventDefault(); const btn = $('su-btn'); btn.disabled = true; say('su-msg','');
+    try {
+      const r = await API.register({ name:$('su-name').value, email:$('su-email').value, password:$('su-pass').value });
+      e.target.reset(); box.classList.remove('active'); setRole('user');
+      $('li-email').value = r.email; $('li-pass').value = '';
+      say('li-msg','Account created. Please sign in.', true);
+    } catch(err){ say('su-msg', err.message); }
+    btn.disabled = false;
+  };
+
+  $('form-login').onsubmit = async e => {
+    e.preventDefault(); const btn = $('li-btn'); btn.disabled = true; say('li-msg','');
+    try {
+      const s = await API.login({ email:$('li-email').value, password:$('li-pass').value, role:rs.dataset.role });
+      enterApp(s);
+    } catch(err){ say('li-msg', err.message); }
+    btn.disabled = false;
+  };
+
+  function enterApp(s){
+    screen.classList.add('gone');
+    $('view-portal').classList.add('hidden');
+    loginAs(s.role);                       // original Fair Drop role view
+    $('nav-user-label').innerText = s.name + ' \u00b7 ' + (s.role === 'admin' ? 'Admin' : 'Purchaser');
+  }
+
+  const origShowPortal = window.showPortal;
+  function logout(){
+    API.logout(); origShowPortal();
+    $('view-portal').classList.add('hidden');
+    $('form-login').reset(); say('li-msg',''); setRole('user'); box.classList.remove('active');
+    screen.classList.remove('gone');
+  }
+  window.showPortal = logout;              // "Logout" button in header
+
+  window.addEventListener('load', () => { const s = API.session(); if (s) enterApp(s); });
+})();
+</script>
+</body>
+</html>
